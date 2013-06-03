@@ -1,4 +1,4 @@
-class WeirdEditor
+class UndoHistory
 
   def initialize lines
     @given_lines = lines
@@ -10,11 +10,19 @@ class WeirdEditor
 
   def min_presses
     @given_lines.each do |line|
-      best = undo_best_matching_history_item line
-      line = line[best.size..-1] if best
-      undo "" unless @buffer.empty? or best
-      input_string line
-      enter
+      if !@buffer.empty? && line.chars.first(@buffer.size).join == @buffer
+        # if the buffer already contains the beginning of the line
+        # then just type out the rest of the line
+        input_string line[@buffer.size..-1]
+        enter
+      else
+        # otherwise, look for a good undo history item to use
+        best = undo_best_matching_history_item line
+        line = line[best.size..-1] if best
+        undo "" unless @buffer.empty? or best
+        input_string line
+        enter
+      end
     end
     puts "Results: #{@results}"
     @presses
@@ -28,7 +36,7 @@ class WeirdEditor
 
   def undo_best_matching_history_item input
     match = @history.select { |item| input[0..item.size-1] == item }.sort_by(&:size).last
-    undo match if match && match.size > 1
+    undo match if match
     match
   end
 
@@ -50,8 +58,8 @@ class WeirdEditor
 
 end
 
-puts WeirdEditor.new(%w{tomorrow topcoder}).min_presses
-puts WeirdEditor.new(%w{a b}).min_presses
-puts WeirdEditor.new(%w{a ab abac abacus}).min_presses
-puts WeirdEditor.new(%w{pyramid sphinx sphere python serpent}).min_presses
-puts WeirdEditor.new(%w{ba a a b ba}).min_presses
+puts UndoHistory.new(%w{tomorrow topcoder}).min_presses
+puts UndoHistory.new(%w{a b}).min_presses
+puts UndoHistory.new(%w{a ab abac abacus}).min_presses
+puts UndoHistory.new(%w{pyramid sphinx sphere python serpent}).min_presses
+puts UndoHistory.new(%w{ba a a b ba}).min_presses
