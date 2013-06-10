@@ -1,65 +1,37 @@
 class EllysRoomAssignmentsDiv1
 
-  DELTA = 0.0000000000001
-
   def initialize ratings
     ratings = ratings.join.split(" ")
     @elly = ratings.first.to_i
-    @ratings = ratings.sort.reverse
+    @ratings = ratings.map(&:to_i).sort.reverse
     @number_of_rooms = (@ratings.size % 20 > 0) ? (@ratings.size/20)+1 : @ratings.size/20
   end
 
   def get_average
 
-    old_avg = 200
-    avg = 1200
+    # with the ordered list of ratings, find elly's index
+    # remove the other two ratings that elly cannot share a room with
+    # get the avg of all remaining scores?
 
-    accum = 0
-    room_accum = 0
-    iterations = 0
+    ellys_index = @ratings.index @elly
+    ellys_round = ellys_index / @number_of_rooms
 
-    until (old_avg - avg).abs < DELTA
-      assign_rooms
-      room = ellys_room
+    ellys_set_start = @number_of_rooms * ellys_round
+    ellys_set = @ratings[(ellys_set_start)..(ellys_set_start+@number_of_rooms-1)]
 
-      iterations += 1
-
-      accum += room.reduce 0.0, :+
-      room_accum += room.size + 0.0
-
-      old_avg = avg
-      avg = accum / room_accum
-
-      if iterations % 10_000 == 0
-        puts "\e[H\e[2J"
-        puts "Mean: #{avg}"
-        puts "Delta: #{(old_avg - avg).abs}"
-        puts "Iterations: #{iterations}"
-      end
-
+    #ellys_set.delete @elly
+    ellys_set.each do |exclude|
+      @ratings.delete exclude
+      #@ratings << @elly
     end
-    avg
-  end
 
-  def assign_rooms
-    @rooms = Array.new(@number_of_rooms) { Array.new }
-    ratings = @ratings.dup
-    until ratings.empty?
-      pool = ratings.take @rooms.size
-      ratings = ratings.drop @rooms.size
-      @rooms.each do |room|
-        person = pool.delete_at(rand(pool.size))
-        room << person.to_i if person
-      end
-      #@rooms.each do |room|
-        #person = ratings.delete_at(rand(ratings.size))
-        #room << person.to_i if person
-      #end
-    end
-  end
 
-  def ellys_room
-    @rooms.find { |r| r.include? @elly }
+    # avgs need to account for different room sizes
+    # ex. with 3 rooms, elly will end up in each one once
+
+    puts @ratings.reduce :+
+    @ratings.reduce(:+) / (@ratings.size + 0.0)
+
   end
 
 end
