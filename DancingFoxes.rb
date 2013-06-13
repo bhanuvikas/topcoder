@@ -1,5 +1,3 @@
-require 'set'
-
 class Fox
 
   attr_accessor :friends, :history, :dancing

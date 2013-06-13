@@ -1,3 +1,6 @@
+require 'rubygems'
+require 'pry'
+
 class EllysRoomAssignmentsDiv1
 
   def initialize ratings
@@ -8,6 +11,8 @@ class EllysRoomAssignmentsDiv1
   end
 
   def get_average
+
+    binding.pry
 
     # with the ordered list of ratings, find elly's index
     # remove the other two ratings that elly cannot share a room with
