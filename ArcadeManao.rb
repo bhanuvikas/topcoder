@@ -1,3 +1,5 @@
+require 'forwardable'
+
 class ArcadeManao
 
   def initialize level, coin_row, coin_column
@@ -5,53 +7,58 @@ class ArcadeManao
       # @level is an array of arrays of booleans
       r.chars.map { |c| c == 'X' }
     end
-    @coin_row = coin_row
-    @coin_column = coin_column
-    # make the spot with the coin accessible (a "platform")
-    @level[@coin_row-1][@coin_column-1] = true
+    @coin_row = coin_row - 1
+    @coin_column = coin_column - 1
+    @level[@coin_row][@coin_column] = true
     @paths = []
     @moves_queue = []
+    #print_level
   end
 
   def shortest_ladder
-    # manao starts at the bottom row
-    @moves_queue << [@level.size-1, 0, Path.new]
+    # manao starts at the coin and works his way to the bottom
+    @moves_queue << [@coin_row, @coin_column, Path.new]
     explore_moves until @moves_queue.empty?
     @paths.collect { |path| path.longest_ladder_used }.min
   end
 
-  def explore_moves
-    move = @moves_queue.shift
-    row = move[0]
-    column = move[1]
-    path = move[2]
-    #print_level path.last_explored
+  def best_path
+    # returns the shortest path found using the shortest ladder possible
+    @moves_queue << [@coin_row, @coin_column, Path.new]
+    explore_moves until @moves_queue.empty?
+    paths = @paths.group_by { |path| path.longest_ladder_used }
+    bests = paths[paths.keys.sort.first]
+    bests.sort_by { |p| p.size }.first
+  end
 
+  def explore_moves
+    row, column, path = @moves_queue.pop
+    # print_level path.last
     path.explore row, column
-    if path.ends_on? @coin_row-1, @coin_column-1
+    if path.ends_on_row? @level.size-1
       @paths << Path.clone(path)
     else
       # add all possible moves to the stack:
-      do_move row, column - 1, path # move 1 to the left
-      do_move row, column + 1, path # move 1 to the right
-      # see if we can go up/down the ladder here
+      try_move row, column - 1, path # move 1 to the left
+      try_move row, column + 1, path # move 1 to the right
+      # see if we can go up/down the ladder. try the shortest move up/down.
       up = down = false
       @level.size.times do |count|
-        # go up/down by count, check out all platforms found
-        [count, count * -1].each do |c|
-          if c > 0 && !down
-            down = do_move row - c, column, path
-          elsif !up
-            up = do_move row - c, column, path
+        unless up && down
+          [count, count * -1].each do |c|
+            if c > 0 && !down
+              down = try_move row - c, column, path
+            elsif !up
+              up = try_move row - c, column, path
+            end
           end
         end
-
       end
     end
   end
 
   # check move for sanity, then allow/disallow it and return true/false
-  def do_move row, column, path
+  def try_move row, column, path
     if check = (row >= 0 and row < @level.size and
       column >= 0 and column < @level.last.size and
       @level[row] and @level[row][column] and
@@ -66,6 +73,8 @@ end
 class Path
 
   attr_reader :explored_positions
+  extend Forwardable
+  def_delegators :@explored_positions, :[], :size, :reverse, :to_s, :last
 
   def self.clone path
     self.new path.explored_positions.clone
@@ -85,8 +94,8 @@ class Path
     @explored_positions << [row, column]
   end
 
-  def ends_on? row, column
-    @explored_positions.last == [row, column]
+  def ends_on_row? row
+    @explored_positions.last[0] == row
   end
 
   def longest_ladder_used
@@ -103,22 +112,11 @@ class Path
 
 end
 
-### For debugging only:
-#
-class Path
-  def to_s
-    @explored_positions.inspect
-  end
-  def last_explored
-    @explored_positions.last
-  end
-end
-
 class ArcadeManao
   def print_level manao=nil
     @level.each_with_index do |r, x|
       r.each_with_index do |c, y|
-        if x+1 == @coin_row and y+1 == @coin_column
+        if x == @coin_row and y == @coin_column
           if manao && manao[0] == x && manao[1] == y
             print "$"
           else
@@ -138,7 +136,6 @@ class ArcadeManao
       end
       print "\n"
     end
-    #puts manao.inspect if manao
     puts "\n" * 2
   end
 end
@@ -148,8 +145,18 @@ level2 = ["XXXX", "...X", "XXXX"]
 level3 = ["..X..", ".X.X.", "X...X", ".X.X.", "..X..", "XXXXX"]
 level4 = ["X"]
 level5 = ["XXXXXXXXXX", "...X......", "XXX.......", "X.....XXXX", "..XXXXX..X", ".........X", ".........X", "XXXXXXXXXX"]
+
 puts ArcadeManao.new(level1, 2, 4).shortest_ladder
+puts ArcadeManao.new(level1, 2, 4).best_path.inspect
+
 puts ArcadeManao.new(level2, 1, 1).shortest_ladder
+puts ArcadeManao.new(level2, 1, 1).best_path.inspect
+
 puts ArcadeManao.new(level3, 1, 3).shortest_ladder
+puts ArcadeManao.new(level3, 1, 3).best_path.inspect
+
 puts ArcadeManao.new(level4, 1, 1).shortest_ladder
+puts ArcadeManao.new(level4, 1, 1).best_path.inspect
+
 puts ArcadeManao.new(level5, 1, 1).shortest_ladder
+puts ArcadeManao.new(level5, 1, 1).best_path.inspect
