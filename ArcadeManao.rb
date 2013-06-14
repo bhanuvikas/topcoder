@@ -16,22 +16,30 @@ class ArcadeManao
   end
 
   def shortest_ladder
-    # manao starts at the coin and works his way to the bottom
-    @moves_queue << [@coin_row, @coin_column, Path.new]
-    explore_moves until @moves_queue.empty?
+    search_until_best_path_is_found!
     @paths.collect { |path| path.longest_ladder_used }.min
   end
 
   def best_path
     # returns the shortest path found using the shortest ladder possible
-    @moves_queue << [@coin_row, @coin_column, Path.new]
-    explore_moves until @moves_queue.empty?
+    search_until_best_path_is_found!
     paths = @paths.group_by { |path| path.longest_ladder_used }
     bests = paths[paths.keys.sort.first]
-    bests.sort_by { |p| p.size }.first
+    bests.sort_by { |p| p.size }.first.reverse
   end
 
-  def explore_moves
+  private
+
+  def search_until_best_path_is_found!
+    (1..@level.size).each do |limit|
+      # manao starts at the coin and works his way to the bottom
+      @moves_queue << [@coin_row, @coin_column, Path.new]
+      explore_moves(limit) until @moves_queue.empty?
+      break unless @paths.empty?
+    end
+  end
+
+  def explore_moves ladder_length_limit
     row, column, path = @moves_queue.pop
     # print_level path.last
     path.explore row, column
@@ -42,33 +50,25 @@ class ArcadeManao
       try_move row, column - 1, path # move 1 to the left
       try_move row, column + 1, path # move 1 to the right
       # see if we can go up/down the ladder. try the shortest move up/down.
-      up = down = false
-      @level.size.times do |count|
-        unless up && down
-          [count, count * -1].each do |c|
-            if c > 0 && !down
-              down = try_move row - c, column, path
-            elsif !up
-              up = try_move row - c, column, path
-            end
-          end
-        end
+      (1..ladder_length_limit).each do |len|
+        try_move row + len, column, path
+        try_move row - len, column, path
       end
     end
   end
 
   # check move for sanity, then allow/disallow it and return true/false
   def try_move row, column, path
-    if check = (row >= 0 and row < @level.size and
+    if row >= 0 and row < @level.size and
       column >= 0 and column < @level.last.size and
       @level[row] and @level[row][column] and
-      path.is_not_yet_explored?(row, column))
+      path.is_not_yet_explored?(row, column)
       @moves_queue << [row, column, Path.clone(path)]
     end
-    check
   end
 
 end
+
 
 class Path
 
