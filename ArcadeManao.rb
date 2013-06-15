@@ -49,7 +49,7 @@ class ArcadeManao
       # add all possible moves to the stack:
       try_move row, column - 1, path # move 1 to the left
       try_move row, column + 1, path # move 1 to the right
-      # see if we can go up/down the ladder. try the shortest move up/down.
+      # see if we can go up/down the ladder. try all lengths within the limit.
       (1..ladder_length_limit).each do |len|
         try_move row + len, column, path
         try_move row - len, column, path
