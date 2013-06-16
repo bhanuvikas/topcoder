@@ -10,7 +10,7 @@ class ArcadeManao
     @coin_row = coin_row - 1
     @coin_column = coin_column - 1
     @level[@coin_row][@coin_column] = true
-    @paths = []
+    @complete_path = nil
     @moves_queue = []
     @ladder_length = 0
     # print_level
@@ -28,8 +28,8 @@ class ArcadeManao
       @ladder_length = limit
       # manao starts at the coin and works his way to the bottom
       @moves_queue << [@coin_row, @coin_column, Path.new]
-      explore_moves(limit) until @moves_queue.empty?
-      break unless @paths.empty?
+      explore_moves(limit) until @moves_queue.empty? || @complete_path
+      break unless @complete_path.nil?
     end
   end
 
@@ -38,7 +38,7 @@ class ArcadeManao
     # print_level path.last
     path.explore row, column
     if path.ends_on_row? @level.size-1
-      @paths << path
+      @complete_path = path
     else
       # add all possible moves to the stack:
       try_move row, column - 1, path # move 1 to the left
@@ -70,9 +70,9 @@ class Path
   extend Forwardable
   def_delegators :@explored_positions, :[], :size, :reverse, :to_s, :last
 
-  def initialize positions=[]
+  def initialize
     # explored positions is an array of arrays [[r,c],[r,c],...]
-    @explored_positions = positions
+    @explored_positions = []
   end
 
   def is_not_yet_explored? row, column
