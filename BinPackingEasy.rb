@@ -5,14 +5,14 @@ class BinPacker
   end
 
   def pack
-    @items.sort.reverse.each do |item|
-      @bins.map! do |bin|
-        if item && bin + item <= 300
-          new_val = bin + item
+    @items.sort!
+    @items.reverse!
+    @items.each do |item|
+      @bins.each_with_index do |bin, i|
+        if bin + item <= 300
+          @bins[i] = bin + item
           item = nil
-          new_val
-        else
-          bin
+          break
         end
       end
       @bins << item if item 
